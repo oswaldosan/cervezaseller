@@ -151,8 +151,8 @@ export default function POSPage() {
       {/* Cart */}
       <aside className="min-h-0 overflow-hidden">
         <div className="h-full rounded-3xl bg-white/[0.04] border border-white/10 card-glow overflow-hidden flex flex-col">
-          <div className="px-5 py-4 flex items-center justify-between border-b border-white/10">
-            <div className="font-display text-lg">Cuenta</div>
+          <div className="shrink-0 px-4 py-2 flex items-center justify-between border-b border-white/10">
+            <div className="font-display text-base">Cuenta</div>
             <button
               onClick={clearAll}
               disabled={lines.length === 0 && !paidStr}
@@ -169,52 +169,53 @@ export default function POSPage() {
               </div>
             )}
             {lines.map((l) => (
-              <div key={l.product.id} className="flex items-center gap-3 py-3">
-                <div className="shrink-0"><ProductThumb product={l.product} size={44} /></div>
+              <div key={l.product.id} className="flex items-center gap-2 py-2">
+                <div className="shrink-0"><ProductThumb product={l.product} size={36} /></div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{l.product.name}</div>
-                  <div className="text-xs text-white/50">{fmt(l.product.price)} c/u</div>
+                  <div className="text-sm font-medium truncate leading-tight">{l.product.name}</div>
+                  <div className="text-[10px] text-white/50">{fmt(l.product.price)} c/u</div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   <button
                     onClick={() => dec(l.product.id)}
-                    className="h-9 w-9 rounded-lg bg-white/5 hover:bg-white/10 text-lg"
+                    className="h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 text-base"
                   >−</button>
-                  <div className="w-8 text-center font-semibold">{l.qty}</div>
+                  <div className="w-7 text-center font-semibold text-sm">{l.qty}</div>
                   <button
                     onClick={() => add(l.product.id)}
-                    className="h-9 w-9 rounded-lg bg-white/5 hover:bg-white/10 text-lg"
+                    className="h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 text-base"
                   >+</button>
                 </div>
-                <div className="w-20 text-right font-semibold">
+                <div className="w-16 text-right font-semibold text-sm">
                   {fmt(l.product.price * l.qty)}
                 </div>
                 <button
                   onClick={() => remove(l.product.id)}
-                  className="text-white/30 hover:text-red-400 px-1"
+                  className="text-white/30 hover:text-red-400 px-0.5 text-sm"
                   aria-label="Quitar"
                 >✕</button>
               </div>
             ))}
           </div>
 
-          <div className="px-5 py-3 border-t border-white/10 bg-black/30 flex items-baseline justify-between">
+          <div className="shrink-0 px-4 py-2 border-t border-white/10 bg-black/30 flex items-baseline justify-between">
             <span className="text-white/60 text-sm">Total</span>
-            <span className="font-display text-3xl text-amber">{fmt(total)}</span>
+            <span className="font-display text-amber" style={{ fontSize: "clamp(1.25rem,3.2vh,2rem)" }}>{fmt(total)}</span>
           </div>
 
           {/* Paid input & quick bills */}
-          <div className="px-5 pt-4">
-            <div className="flex items-baseline justify-between mb-2">
-              <span className="text-white/60 text-sm">Recibido</span>
-              <span className="font-display text-xl">{fmt(paid)}</span>
+          <div className="shrink-0 px-4 pt-2">
+            <div className="flex items-baseline justify-between mb-1.5">
+              <span className="text-white/60 text-xs">Recibido</span>
+              <span className="font-display" style={{ fontSize: "clamp(0.95rem,2vh,1.25rem)" }}>{fmt(paid)}</span>
             </div>
-            <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-3 gap-1.5 mb-1.5">
               {QUICK_BILLS.map((b) => (
                 <button
                   key={b}
                   onClick={() => addBill(b)}
-                  className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 py-3 font-semibold"
+                  className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 font-semibold"
+                  style={{ padding: "clamp(0.35rem,1.2vh,0.65rem) 0", fontSize: "clamp(0.75rem,1.5vh,0.95rem)" }}
                 >
                   +L{b}
                 </button>
@@ -223,14 +224,15 @@ export default function POSPage() {
             <button
               onClick={exact}
               disabled={total === 0}
-              className="w-full rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 text-sm disabled:opacity-30 mb-3"
+              className="w-full rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs disabled:opacity-30 mb-1.5"
+              style={{ padding: "clamp(0.3rem,1vh,0.6rem) 0" }}
             >
               Pago exacto
             </button>
           </div>
 
           {/* Numpad */}
-          <div className="px-5 pb-3 grid grid-cols-3 gap-2">
+          <div className="shrink-0 px-4 pb-2 grid grid-cols-3 gap-1.5">
             {["1","2","3","4","5","6","7","8","9",".","0","back"].map((k) => (
               <button
                 key={k}
@@ -243,21 +245,23 @@ export default function POSPage() {
           </div>
 
           {/* Change + pay */}
-          <div className="px-5 pb-5">
+          <div className="shrink-0 px-4 pb-3">
             <div
-              className={`rounded-2xl border p-4 flex items-baseline justify-between mb-3 ${
+              className={`rounded-2xl border flex items-baseline justify-between mb-2 ${
                 change < 0
                   ? "bg-red-500/10 border-red-500/30"
                   : change > 0
                   ? "bg-emerald-500/10 border-emerald-500/30"
                   : "bg-white/5 border-white/10"
               }`}
+              style={{ padding: "clamp(0.5rem,1.6vh,1rem)" }}
             >
-              <span className="text-sm text-white/70">Cambio</span>
+              <span className="text-xs text-white/70">Cambio</span>
               <span
-                className={`font-display text-3xl ${
+                className={`font-display ${
                   change < 0 ? "text-red-300" : change > 0 ? "text-emerald-300" : "text-white"
                 }`}
+                style={{ fontSize: "clamp(1.1rem,3vh,1.85rem)" }}
               >
                 {change < 0 ? `Falta ${fmt(Math.abs(change))}` : fmt(change)}
               </span>
@@ -265,7 +269,8 @@ export default function POSPage() {
             <button
               onClick={pay}
               disabled={!canPay || busy}
-              className="w-full rounded-2xl py-5 text-xl font-bold bg-amber text-black hover:brightness-110 active:brightness-95 disabled:bg-white/10 disabled:text-white/40 transition"
+              className="w-full rounded-2xl font-bold bg-amber text-black hover:brightness-110 active:brightness-95 disabled:bg-white/10 disabled:text-white/40 transition"
+              style={{ padding: "clamp(0.6rem,2.2vh,1.1rem) 0", fontSize: "clamp(0.95rem,2.4vh,1.25rem)" }}
             >
               {busy ? "Guardando..." : "Cobrar y guardar"}
             </button>
