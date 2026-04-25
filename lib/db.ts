@@ -44,8 +44,26 @@ if (!global.__posDb) {
     );
     CREATE INDEX IF NOT EXISTS idx_closings_closed ON cash_closings(closed_at);
   `);
+
+  // Lightweight migrations (idempotent)
+  const addColumn = (table: string, col: string, def: string) => {
+    const cols = db
+      .prepare(`PRAGMA table_info(${table})`)
+      .all() as { name: string }[];
+    if (!cols.find((c) => c.name === col)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+    }
+  };
+  addColumn("sales", "payment_method", "TEXT NOT NULL DEFAULT 'cash'");
+  addColumn("cash_closings", "cash_sales", "REAL NOT NULL DEFAULT 0");
+  addColumn("cash_closings", "card_sales", "REAL NOT NULL DEFAULT 0");
+  addColumn("cash_closings", "cash_count", "INTEGER NOT NULL DEFAULT 0");
+  addColumn("cash_closings", "card_count", "INTEGER NOT NULL DEFAULT 0");
+
   global.__posDb = db;
 }
+
+export type PaymentMethod = "cash" | "card";
 
 export type SaleRow = {
   id: number;
@@ -54,6 +72,7 @@ export type SaleRow = {
   paid: number;
   change: number;
   items_json: string;
+  payment_method: PaymentMethod;
 };
 
 export type SaleItem = { id: string; name: string; price: number; qty: number };

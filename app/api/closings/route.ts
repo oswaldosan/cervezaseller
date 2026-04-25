@@ -21,10 +21,19 @@ function computeCurrent() {
   const agg = db
     .prepare(
       `SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count,
-              MIN(id) as min_id, MAX(id) as max_id
+              MIN(id) as min_id, MAX(id) as max_id,
+              COALESCE(SUM(CASE WHEN payment_method='cash' THEN total ELSE 0 END),0) as cash_total,
+              COALESCE(SUM(CASE WHEN payment_method='card' THEN total ELSE 0 END),0) as card_total,
+              SUM(CASE WHEN payment_method='cash' THEN 1 ELSE 0 END) as cash_count,
+              SUM(CASE WHEN payment_method='card' THEN 1 ELSE 0 END) as card_count
        FROM sales WHERE id > ?`
     )
-    .get(afterId) as SaleAgg;
+    .get(afterId) as SaleAgg & {
+    cash_total: number;
+    card_total: number;
+    cash_count: number;
+    card_count: number;
+  };
 
   const rows = db
     .prepare(`SELECT items_json FROM sales WHERE id > ?`)
@@ -55,6 +64,10 @@ function computeCurrent() {
     units,
     minId: agg.min_id,
     maxId: agg.max_id,
+    cashTotal: agg.cash_total,
+    cardTotal: agg.card_total,
+    cashCount: agg.cash_count || 0,
+    cardCount: agg.card_count || 0,
     breakdown: Object.entries(byProduct).map(([id, v]) => ({ id, ...v })),
   };
 }
@@ -64,7 +77,8 @@ export async function GET() {
   const history = db
     .prepare(
       `SELECT id, closed_at, opening_cash, total_sales, sales_count, units_sold,
-              expected_cash, counted_cash, difference, from_sale_id, to_sale_id, notes
+              expected_cash, counted_cash, difference, from_sale_id, to_sale_id, notes,
+              cash_sales, card_sales, cash_count, card_count
        FROM cash_closings ORDER BY id DESC LIMIT 30`
     )
     .all();
@@ -90,15 +104,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const expected = +(opening + cur.total).toFixed(2);
+  // Card sales never enter the physical cash drawer.
+  const expected = +(opening + cur.cashTotal).toFixed(2);
   const difference = +(counted - expected).toFixed(2);
 
   const info = db
     .prepare(
       `INSERT INTO cash_closings
        (opening_cash, total_sales, sales_count, units_sold, expected_cash,
-        counted_cash, difference, from_sale_id, to_sale_id, notes, breakdown_json)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+        counted_cash, difference, from_sale_id, to_sale_id, notes, breakdown_json,
+        cash_sales, card_sales, cash_count, card_count)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
     )
     .run(
       opening,
@@ -111,7 +127,11 @@ export async function POST(req: NextRequest) {
       cur.minId,
       cur.maxId,
       notes,
-      JSON.stringify(cur.breakdown)
+      JSON.stringify(cur.breakdown),
+      cur.cashTotal,
+      cur.cardTotal,
+      cur.cashCount,
+      cur.cardCount
     );
 
   return NextResponse.json({
@@ -120,6 +140,10 @@ export async function POST(req: NextRequest) {
     total_sales: cur.total,
     sales_count: cur.count,
     units_sold: cur.units,
+    cash_sales: cur.cashTotal,
+    card_sales: cur.cardTotal,
+    cash_count: cur.cashCount,
+    card_count: cur.cardCount,
     expected_cash: expected,
     counted_cash: counted,
     difference,

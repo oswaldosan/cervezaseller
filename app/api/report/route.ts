@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-type Row = { items_json: string; total: number };
+type Row = { items_json: string; total: number; payment_method: "cash" | "card" };
 
 function aggregate(rows: Row[]) {
   const byProduct: Record<
@@ -12,8 +12,19 @@ function aggregate(rows: Row[]) {
   > = {};
   let units = 0;
   let total = 0;
+  let cashTotal = 0;
+  let cardTotal = 0;
+  let cashCount = 0;
+  let cardCount = 0;
   for (const r of rows) {
     total += r.total;
+    if (r.payment_method === "card") {
+      cardTotal += r.total;
+      cardCount++;
+    } else {
+      cashTotal += r.total;
+      cashCount++;
+    }
     const items = JSON.parse(r.items_json) as {
       id: string;
       name: string;
@@ -28,7 +39,16 @@ function aggregate(rows: Row[]) {
     }
   }
   const breakdown = Object.values(byProduct).sort((a, b) => b.qty - a.qty);
-  return { total, units, count: rows.length, breakdown };
+  return {
+    total,
+    units,
+    count: rows.length,
+    cashTotal,
+    cardTotal,
+    cashCount,
+    cardCount,
+    breakdown,
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -41,13 +61,13 @@ export async function GET(req: NextRequest) {
   if (range === "today") {
     rows = db
       .prepare(
-        `SELECT items_json, total FROM sales
+        `SELECT items_json, total, payment_method FROM sales
          WHERE date(created_at,'localtime') = date('now','localtime')`
       )
       .all() as Row[];
     label = "Hoy";
   } else if (range === "all") {
-    rows = db.prepare(`SELECT items_json, total FROM sales`).all() as Row[];
+    rows = db.prepare(`SELECT items_json, total, payment_method FROM sales`).all() as Row[];
     label = "Todo";
   } else if (range === "period") {
     const last = db
@@ -55,7 +75,7 @@ export async function GET(req: NextRequest) {
       .get() as { to_sale_id: number | null } | undefined;
     const afterId = last?.to_sale_id ?? 0;
     rows = db
-      .prepare(`SELECT items_json, total FROM sales WHERE id > ?`)
+      .prepare(`SELECT items_json, total, payment_method FROM sales WHERE id > ?`)
       .all(afterId) as Row[];
     label = `Período actual (desde venta #${afterId + 1})`;
     meta.afterId = afterId;
@@ -79,7 +99,7 @@ export async function GET(req: NextRequest) {
       | undefined;
     if (!c) return NextResponse.json({ error: "Cierre no encontrado" }, { status: 404 });
     rows = db
-      .prepare(`SELECT items_json, total FROM sales WHERE id >= ? AND id <= ?`)
+      .prepare(`SELECT items_json, total, payment_method FROM sales WHERE id >= ? AND id <= ?`)
       .all(c.from_sale_id ?? 0, c.to_sale_id ?? 0) as Row[];
     label = `Cierre #${c.id}`;
     meta = { closing: c };

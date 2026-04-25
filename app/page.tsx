@@ -14,9 +14,12 @@ function fmt(n: number) {
   return "L" + n.toLocaleString("es-HN", { minimumFractionDigits: 0 });
 }
 
+type Method = "cash" | "card";
+
 export default function POSPage() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [paidStr, setPaidStr] = useState<string>("");
+  const [method, setMethod] = useState<Method>("cash");
   const [toast, setToast] = useState<{ msg: string; tone: "ok" | "err" } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -31,9 +34,9 @@ export default function POSPage() {
     [cart]
   );
   const total = lines.reduce((s, l) => s + l.product.price * l.qty, 0);
-  const paid = Number(paidStr) || 0;
-  const change = paid - total;
-  const canPay = total > 0 && paid >= total;
+  const paid = method === "card" ? total : Number(paidStr) || 0;
+  const change = method === "card" ? 0 : paid - total;
+  const canPay = total > 0 && (method === "card" || paid >= total);
 
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
   const dec = (id: string) =>
@@ -53,6 +56,7 @@ export default function POSPage() {
   const clearAll = () => {
     setCart({});
     setPaidStr("");
+    setMethod("cash");
   };
 
   const tapPad = (v: string) => {
@@ -74,6 +78,7 @@ export default function POSPage() {
     const payload = {
       items: lines.map((l) => ({ id: l.product.id, qty: l.qty })),
       paid,
+      method,
     };
     const localId =
       (typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -89,10 +94,14 @@ export default function POSPage() {
         paid,
         total,
         change,
+        method,
       });
       window.dispatchEvent(new Event("pos:queue-update"));
       setToast({
-        msg: `Sin conexión — Venta guardada local · Cambio ${fmt(change)}`,
+        msg:
+          method === "card"
+            ? `Sin conexión — Venta tarjeta guardada local`
+            : `Sin conexión — Venta guardada local · Cambio ${fmt(change)}`,
         tone: "ok",
       });
       clearAll();
@@ -114,7 +123,13 @@ export default function POSPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error");
-      setToast({ msg: `Venta #${data.id} — Cambio ${fmt(data.change)}`, tone: "ok" });
+      setToast({
+        msg:
+          method === "card"
+            ? `Venta #${data.id} con TARJETA — ${fmt(data.total)}`
+            : `Venta #${data.id} — Cambio ${fmt(data.change)}`,
+        tone: "ok",
+      });
       clearAll();
     } catch (e: any) {
       // Network / server down: queue
@@ -203,76 +218,127 @@ export default function POSPage() {
             <span className="font-display text-amber" style={{ fontSize: "clamp(1.25rem,3.2vh,2rem)" }}>{fmt(total)}</span>
           </div>
 
-          {/* Paid input & quick bills */}
+          {/* Method toggle */}
           <div className="shrink-0 px-4 pt-2">
-            <div className="flex items-baseline justify-between mb-1.5">
-              <span className="text-white/60 text-xs">Recibido</span>
-              <span className="font-display" style={{ fontSize: "clamp(0.95rem,2vh,1.25rem)" }}>{fmt(paid)}</span>
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/5 border border-white/10 rounded-xl">
+              <button
+                onClick={() => setMethod("cash")}
+                className={`rounded-lg font-semibold transition ${
+                  method === "cash" ? "bg-amber text-black" : "text-white/70 hover:text-white"
+                }`}
+                style={{ padding: "clamp(0.4rem,1.3vh,0.7rem) 0", fontSize: "clamp(0.8rem,1.6vh,1rem)" }}
+              >
+                💵 Efectivo
+              </button>
+              <button
+                onClick={() => setMethod("card")}
+                className={`rounded-lg font-semibold transition ${
+                  method === "card" ? "bg-sky-400 text-black" : "text-white/70 hover:text-white"
+                }`}
+                style={{ padding: "clamp(0.4rem,1.3vh,0.7rem) 0", fontSize: "clamp(0.8rem,1.6vh,1rem)" }}
+              >
+                💳 Tarjeta
+              </button>
             </div>
-            <div className="grid grid-cols-3 gap-1.5 mb-1.5">
-              {QUICK_BILLS.map((b) => (
-                <button
-                  key={b}
-                  onClick={() => addBill(b)}
-                  className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 font-semibold"
-                  style={{ padding: "clamp(0.35rem,1.2vh,0.65rem) 0", fontSize: "clamp(0.75rem,1.5vh,0.95rem)" }}
-                >
-                  +L{b}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={exact}
-              disabled={total === 0}
-              className="w-full rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs disabled:opacity-30 mb-1.5"
-              style={{ padding: "clamp(0.3rem,1vh,0.6rem) 0" }}
-            >
-              Pago exacto
-            </button>
           </div>
 
-          {/* Numpad */}
-          <div className="shrink-0 px-4 pb-2 grid grid-cols-3 gap-1.5">
-            {["1","2","3","4","5","6","7","8","9",".","0","back"].map((k) => (
-              <button
-                key={k}
-                onClick={() => tapPad(k)}
-                className="num-pad-btn"
-              >
-                {k === "back" ? "⌫" : k}
-              </button>
-            ))}
-          </div>
+          {method === "cash" && (
+            <>
+              {/* Paid input & quick bills */}
+              <div className="shrink-0 px-4 pt-2">
+                <div className="flex items-baseline justify-between mb-1.5">
+                  <span className="text-white/60 text-xs">Recibido</span>
+                  <span className="font-display" style={{ fontSize: "clamp(0.95rem,2vh,1.25rem)" }}>{fmt(paid)}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+                  {QUICK_BILLS.map((b) => (
+                    <button
+                      key={b}
+                      onClick={() => addBill(b)}
+                      className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 font-semibold"
+                      style={{ padding: "clamp(0.35rem,1.2vh,0.65rem) 0", fontSize: "clamp(0.75rem,1.5vh,0.95rem)" }}
+                    >
+                      +L{b}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={exact}
+                  disabled={total === 0}
+                  className="w-full rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs disabled:opacity-30 mb-1.5"
+                  style={{ padding: "clamp(0.3rem,1vh,0.6rem) 0" }}
+                >
+                  Pago exacto
+                </button>
+              </div>
+
+              {/* Numpad */}
+              <div className="shrink-0 px-4 pb-2 grid grid-cols-3 gap-1.5">
+                {["1","2","3","4","5","6","7","8","9",".","0","back"].map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => tapPad(k)}
+                    className="num-pad-btn"
+                  >
+                    {k === "back" ? "⌫" : k}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Change + pay */}
-          <div className="shrink-0 px-4 pb-3">
-            <div
-              className={`rounded-2xl border flex items-baseline justify-between mb-2 ${
-                change < 0
-                  ? "bg-red-500/10 border-red-500/30"
-                  : change > 0
-                  ? "bg-emerald-500/10 border-emerald-500/30"
-                  : "bg-white/5 border-white/10"
-              }`}
-              style={{ padding: "clamp(0.5rem,1.6vh,1rem)" }}
-            >
-              <span className="text-xs text-white/70">Cambio</span>
-              <span
-                className={`font-display ${
-                  change < 0 ? "text-red-300" : change > 0 ? "text-emerald-300" : "text-white"
+          <div className="shrink-0 px-4 pb-3 pt-2">
+            {method === "cash" ? (
+              <div
+                className={`rounded-2xl border flex items-baseline justify-between mb-2 ${
+                  change < 0
+                    ? "bg-red-500/10 border-red-500/30"
+                    : change > 0
+                    ? "bg-emerald-500/10 border-emerald-500/30"
+                    : "bg-white/5 border-white/10"
                 }`}
-                style={{ fontSize: "clamp(1.1rem,3vh,1.85rem)" }}
+                style={{ padding: "clamp(0.5rem,1.6vh,1rem)" }}
               >
-                {change < 0 ? `Falta ${fmt(Math.abs(change))}` : fmt(change)}
-              </span>
-            </div>
+                <span className="text-xs text-white/70">Cambio</span>
+                <span
+                  className={`font-display ${
+                    change < 0 ? "text-red-300" : change > 0 ? "text-emerald-300" : "text-white"
+                  }`}
+                  style={{ fontSize: "clamp(1.1rem,3vh,1.85rem)" }}
+                >
+                  {change < 0 ? `Falta ${fmt(Math.abs(change))}` : fmt(change)}
+                </span>
+              </div>
+            ) : (
+              <div
+                className="rounded-2xl border bg-sky-500/10 border-sky-500/30 flex items-baseline justify-between mb-2"
+                style={{ padding: "clamp(0.5rem,1.6vh,1rem)" }}
+              >
+                <span className="text-xs text-white/80">Pago con tarjeta</span>
+                <span
+                  className="font-display text-sky-200"
+                  style={{ fontSize: "clamp(1.1rem,3vh,1.85rem)" }}
+                >
+                  {fmt(total)}
+                </span>
+              </div>
+            )}
             <button
               onClick={pay}
               disabled={!canPay || busy}
-              className="w-full rounded-2xl font-bold bg-amber text-black hover:brightness-110 active:brightness-95 disabled:bg-white/10 disabled:text-white/40 transition"
+              className={`w-full rounded-2xl font-bold transition disabled:bg-white/10 disabled:text-white/40 ${
+                method === "card"
+                  ? "bg-sky-400 text-black hover:brightness-110 active:brightness-95"
+                  : "bg-amber text-black hover:brightness-110 active:brightness-95"
+              }`}
               style={{ padding: "clamp(0.6rem,2.2vh,1.1rem) 0", fontSize: "clamp(0.95rem,2.4vh,1.25rem)" }}
             >
-              {busy ? "Guardando..." : "Cobrar y guardar"}
+              {busy
+                ? "Guardando..."
+                : method === "card"
+                ? "Cobrar con tarjeta"
+                : "Cobrar y guardar"}
             </button>
           </div>
         </div>

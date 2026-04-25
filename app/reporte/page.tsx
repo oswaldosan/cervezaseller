@@ -9,6 +9,10 @@ type Report = {
   total: number;
   units: number;
   count: number;
+  cashTotal: number;
+  cardTotal: number;
+  cashCount: number;
+  cardCount: number;
   breakdown: Item[];
   meta?: any;
 };
@@ -70,6 +74,10 @@ export default function ReportePage() {
       ["Total ventas", String(data.count)],
       ["Unidades totales", String(data.units)],
       ["Monto total", String(data.total)],
+      ["Efectivo (#)", String(data.cashCount)],
+      ["Efectivo (L)", String(data.cashTotal)],
+      ["Tarjeta (#)", String(data.cardCount)],
+      ["Tarjeta (L)", String(data.cardTotal)],
     ];
     const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -122,11 +130,21 @@ export default function ReportePage() {
 
       {data && !loading && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             <Stat label="Ventas" value={String(data.count)} />
             <Stat label="Unidades" value={String(data.units)} />
             <Stat label="Total" value={fmt(data.total)} />
             <Stat label="Ticket promedio" value={data.count ? fmt(data.total / data.count) : "—"} />
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <Stat
+              label={`💵 Efectivo (${data.cashCount})`}
+              value={fmt(data.cashTotal)}
+            />
+            <Stat
+              label={`💳 Tarjeta (${data.cardCount})`}
+              value={fmt(data.cardTotal)}
+            />
           </div>
 
           {data.breakdown.length === 0 ? (

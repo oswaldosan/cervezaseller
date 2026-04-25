@@ -10,6 +10,10 @@ type Current = {
   units: number;
   minId: number | null;
   maxId: number | null;
+  cashTotal: number;
+  cardTotal: number;
+  cashCount: number;
+  cardCount: number;
   breakdown: Breakdown[];
 };
 type Closing = {
@@ -25,6 +29,10 @@ type Closing = {
   from_sale_id: number | null;
   to_sale_id: number | null;
   notes: string | null;
+  cash_sales?: number;
+  card_sales?: number;
+  cash_count?: number;
+  card_count?: number;
 };
 
 function fmt(n: number) {
@@ -52,7 +60,8 @@ export default function CierrePage() {
 
   const openingN = Number(opening) || 0;
   const countedN = Number(counted) || 0;
-  const expected = openingN + (current?.total || 0);
+  // Card sales never enter the drawer.
+  const expected = openingN + (current?.cashTotal || 0);
   const diff = countedN - expected;
 
   const submit = async () => {
@@ -92,7 +101,7 @@ export default function CierrePage() {
         <div className="text-xs text-white/50 uppercase tracking-wide mb-3">
           Período actual (desde venta #{(current?.afterId ?? 0) + 1})
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
           <Stat label="Ventas" value={String(current?.count ?? 0)} />
           <Stat label="Unidades" value={String(current?.units ?? 0)} />
           <Stat label="Total vendido" value={fmt(current?.total ?? 0)} />
@@ -101,6 +110,17 @@ export default function CierrePage() {
               ? `#${current.minId}–#${current.maxId}`
               : "—"
           } />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <Stat
+            label={`💵 Efectivo (${current?.cashCount ?? 0})`}
+            value={fmt(current?.cashTotal ?? 0)}
+          />
+          <Stat
+            label={`💳 Tarjeta (${current?.cardCount ?? 0})`}
+            value={fmt(current?.cardTotal ?? 0)}
+          />
         </div>
 
         {current && current.breakdown.length > 0 && (
@@ -132,7 +152,7 @@ export default function CierrePage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
-          <Stat label="Esperado" value={fmt(expected)} />
+          <Stat label="Esperado en caja" value={fmt(expected)} />
           <Stat label="Contado" value={fmt(countedN)} />
           <Stat
             label="Diferencia"
@@ -140,6 +160,10 @@ export default function CierrePage() {
             tone={diff < 0 ? "bad" : diff > 0 ? "good" : "neutral"}
           />
         </div>
+        <p className="text-[11px] text-white/40 mt-2">
+          El esperado solo incluye ventas en efectivo + fondo inicial. Las ventas
+          con tarjeta se reportan aparte.
+        </p>
 
         <button
           onClick={submit}
@@ -179,11 +203,13 @@ export default function CierrePage() {
                 {fmt(c.difference)}
               </span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs text-white/70">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-white/70">
               <Info k="Fondo" v={fmt(c.opening_cash)} />
               <Info k="Ventas" v={`${c.sales_count} · ${fmt(c.total_sales)}`} />
               <Info k="Unidades" v={String(c.units_sold)} />
               <Info k="Esperado" v={fmt(c.expected_cash)} />
+              <Info k="💵 Efectivo" v={`${c.cash_count ?? 0} · ${fmt(c.cash_sales ?? 0)}`} />
+              <Info k="💳 Tarjeta" v={`${c.card_count ?? 0} · ${fmt(c.card_sales ?? 0)}`} />
               <Info k="Contado" v={fmt(c.counted_cash)} />
             </div>
             {c.notes && <div className="text-xs text-white/50 mt-2">📝 {c.notes}</div>}

@@ -16,7 +16,7 @@ function readPassword(req: NextRequest, urlPw: string | null): string {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const items = body.items as { id: string; qty: number }[];
-  const paid = Number(body.paid);
+  const method: "cash" | "card" = body.method === "card" ? "card" : "cash";
 
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "Carrito vacío" }, { status: 400 });
@@ -32,31 +32,45 @@ export async function POST(req: NextRequest) {
     total += p.price * qty;
   }
 
-  if (!Number.isFinite(paid) || paid < total) {
-    return NextResponse.json({ error: "Pago insuficiente" }, { status: 400 });
+  let paid: number;
+  let change: number;
+  if (method === "card") {
+    paid = total;
+    change = 0;
+  } else {
+    paid = Number(body.paid);
+    if (!Number.isFinite(paid) || paid < total) {
+      return NextResponse.json({ error: "Pago insuficiente" }, { status: 400 });
+    }
+    change = +(paid - total).toFixed(2);
   }
 
-  const change = +(paid - total).toFixed(2);
   const createdAt = req.headers.get("x-created-at");
   const info = createdAt
     ? db
         .prepare(
-          `INSERT INTO sales (created_at, total, paid, change, items_json) VALUES (?, ?, ?, ?, ?)`
+          `INSERT INTO sales (created_at, total, paid, change, items_json, payment_method) VALUES (?, ?, ?, ?, ?, ?)`
         )
-        .run(createdAt, total, paid, change, JSON.stringify(resolved))
+        .run(createdAt, total, paid, change, JSON.stringify(resolved), method)
     : db
         .prepare(
-          `INSERT INTO sales (total, paid, change, items_json) VALUES (?, ?, ?, ?)`
+          `INSERT INTO sales (total, paid, change, items_json, payment_method) VALUES (?, ?, ?, ?, ?)`
         )
-        .run(total, paid, change, JSON.stringify(resolved));
+        .run(total, paid, change, JSON.stringify(resolved), method);
 
-  return NextResponse.json({ id: info.lastInsertRowid, total, paid, change });
+  return NextResponse.json({
+    id: info.lastInsertRowid,
+    total,
+    paid,
+    change,
+    payment_method: method,
+  });
 }
 
 export async function GET() {
   const rows = db
     .prepare(
-      `SELECT id, created_at, total, paid, change, items_json FROM sales ORDER BY id DESC LIMIT 200`
+      `SELECT id, created_at, total, paid, change, items_json, payment_method FROM sales ORDER BY id DESC LIMIT 200`
     )
     .all() as SaleRow[];
   const summary = db

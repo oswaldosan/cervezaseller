@@ -7,6 +7,7 @@ export type PendingSale = {
   paid: number;
   total: number;
   change: number;
+  method: "cash" | "card";
 };
 
 export function loadQueue(): PendingSale[] {
@@ -53,7 +54,7 @@ export async function flushQueue(): Promise<{
           "x-local-id": s.localId,
           "x-created-at": s.createdAt,
         },
-        body: JSON.stringify({ items: s.items, paid: s.paid }),
+        body: JSON.stringify({ items: s.items, paid: s.paid, method: s.method }),
       });
       if (res.ok) sent++;
       else {

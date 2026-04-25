@@ -10,6 +10,7 @@ type Sale = {
   paid: number;
   change: number;
   items: Item[];
+  payment_method?: "cash" | "card";
 };
 
 function fmt(n: number) {
@@ -113,6 +114,15 @@ export default function HistorialPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-3">
                 <span className="font-display text-lg">#{s.id}</span>
+                <span
+                  className={`chip text-xs font-semibold border ${
+                    s.payment_method === "card"
+                      ? "bg-sky-500/10 border-sky-500/40 text-sky-200"
+                      : "bg-emerald-500/10 border-emerald-500/40 text-emerald-200"
+                  }`}
+                >
+                  {s.payment_method === "card" ? "💳 Tarjeta" : "💵 Efectivo"}
+                </span>
                 <span className="text-xs text-white/50">
                   {new Date(s.created_at + "Z").toLocaleString("es-HN")}
                 </span>
@@ -139,8 +149,14 @@ export default function HistorialPage() {
               ))}
             </div>
             <div className="text-xs text-white/50 flex gap-4">
-              <span>Recibido: {fmt(s.paid)}</span>
-              <span>Cambio: {fmt(s.change)}</span>
+              {s.payment_method === "card" ? (
+                <span>Pagado con tarjeta</span>
+              ) : (
+                <>
+                  <span>Recibido: {fmt(s.paid)}</span>
+                  <span>Cambio: {fmt(s.change)}</span>
+                </>
+              )}
             </div>
           </div>
         ))}
