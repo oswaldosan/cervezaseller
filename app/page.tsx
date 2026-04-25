@@ -5,6 +5,7 @@ import { PRODUCTS, Product } from "@/lib/products";
 import ProductThumb from "@/components/ProductThumb";
 import ProductCard from "@/components/ProductCard";
 import { enqueue } from "@/lib/offlineQueue";
+import { FEATURES } from "@/lib/features";
 
 type CartLine = { product: Product; qty: number };
 
@@ -20,7 +21,11 @@ export default function POSPage() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [paidStr, setPaidStr] = useState<string>("");
   const [method, setMethod] = useState<Method>("cash");
-  const [toast, setToast] = useState<{ msg: string; tone: "ok" | "err" } | null>(null);
+  const [toast, setToast] = useState<{
+    msg: string;
+    tone: "ok" | "err";
+    saleId?: number;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const lines: CartLine[] = useMemo(
@@ -129,6 +134,7 @@ export default function POSPage() {
             ? `Venta #${data.id} con TARJETA — ${fmt(data.total)}`
             : `Venta #${data.id} — Cambio ${fmt(data.change)}`,
         tone: "ok",
+        saleId: typeof data.id === "number" ? data.id : undefined,
       });
       clearAll();
     } catch (e: any) {
@@ -136,7 +142,7 @@ export default function POSPage() {
       queueOffline();
     } finally {
       setBusy(false);
-      setTimeout(() => setToast(null), 3500);
+      setTimeout(() => setToast(null), FEATURES.tickets ? 8000 : 3500);
     }
   };
 
@@ -346,11 +352,25 @@ export default function POSPage() {
 
       {toast && (
         <div
-          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full text-sm font-semibold shadow-xl ${
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full text-sm font-semibold shadow-xl flex items-center gap-3 ${
             toast.tone === "ok" ? "bg-emerald-400 text-black" : "bg-red-500 text-white"
           }`}
         >
-          {toast.msg}
+          <span>{toast.msg}</span>
+          {FEATURES.tickets && toast.tone === "ok" && toast.saleId !== undefined && (
+            <button
+              onClick={() =>
+                window.open(
+                  `/ticket/${toast.saleId}?autoprint=1`,
+                  "_blank",
+                  "noopener,noreferrer"
+                )
+              }
+              className="bg-black/80 text-white rounded-full px-3 py-1 text-xs font-bold hover:bg-black"
+            >
+              🖨️ Imprimir
+            </button>
+          )}
         </div>
       )}
     </main>

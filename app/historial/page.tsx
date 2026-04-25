@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FEATURES } from "@/lib/features";
 
 type Item = { id: string; name: string; price: number; qty: number };
 type Sale = {
@@ -129,6 +130,16 @@ export default function HistorialPage() {
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-amber font-display text-xl">{fmt(s.total)}</span>
+                {FEATURES.tickets && (
+                  <a
+                    href={`/ticket/${s.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-white/60 hover:text-white"
+                  >
+                    🖨️ Reimprimir
+                  </a>
+                )}
                 <button
                   onClick={() => del(s.id)}
                   className="text-xs text-white/40 hover:text-red-400"
