@@ -13,6 +13,7 @@ export const PRODUCTS: Product[] = [
   { id: "ultra", name: "Ultra", price: 50, emoji: "🍺", image: "/products/ultra.png", accent: "#c9a227", category: "cerveza" },
   { id: "barena", name: "Barena", price: 35, emoji: "🍺", image: "/products/barena.png", accent: "#1d4ed8", category: "cerveza" },
   { id: "imperial", name: "Imperial", price: 35, emoji: "🍺", image: "/products/imperial.png", accent: "#0f766e", category: "cerveza" },
+  { id: "corona", name: "Corona", price: 50, emoji: "🍺", image: "/products/corona.png", accent: "#eab308", category: "cerveza" },
   { id: "tequila", name: "Tequila Shot", price: 80, emoji: "🥃", accent: "#b45309", category: "licor" },
   { id: "vodka", name: "Vodka Cranberry", price: 80, emoji: "🍹", accent: "#be123c", category: "licor" },
   { id: "refresco", name: "Refresco Lata", price: 30, emoji: "🥤", image: "/products/refresco.png", accent: "#dc2626", category: "bebida" },
