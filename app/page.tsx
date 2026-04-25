@@ -219,23 +219,23 @@ export default function POSPage() {
           </div>
 
           {/* Method toggle */}
-          <div className="shrink-0 px-4 pt-2">
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/5 border border-white/10 rounded-xl">
+          <div className="shrink-0 px-4 pt-1.5">
+            <div className="grid grid-cols-2 gap-1 p-0.5 bg-white/5 border border-white/10 rounded-lg">
               <button
                 onClick={() => setMethod("cash")}
-                className={`rounded-lg font-semibold transition ${
+                className={`rounded-md font-semibold transition ${
                   method === "cash" ? "bg-amber text-black" : "text-white/70 hover:text-white"
                 }`}
-                style={{ padding: "clamp(0.4rem,1.3vh,0.7rem) 0", fontSize: "clamp(0.8rem,1.6vh,1rem)" }}
+                style={{ padding: "clamp(0.25rem,0.9vh,0.5rem) 0", fontSize: "clamp(0.7rem,1.4vh,0.9rem)" }}
               >
                 💵 Efectivo
               </button>
               <button
                 onClick={() => setMethod("card")}
-                className={`rounded-lg font-semibold transition ${
+                className={`rounded-md font-semibold transition ${
                   method === "card" ? "bg-sky-400 text-black" : "text-white/70 hover:text-white"
                 }`}
-                style={{ padding: "clamp(0.4rem,1.3vh,0.7rem) 0", fontSize: "clamp(0.8rem,1.6vh,1rem)" }}
+                style={{ padding: "clamp(0.25rem,0.9vh,0.5rem) 0", fontSize: "clamp(0.7rem,1.4vh,0.9rem)" }}
               >
                 💳 Tarjeta
               </button>
@@ -245,35 +245,35 @@ export default function POSPage() {
           {method === "cash" && (
             <>
               {/* Paid input & quick bills */}
-              <div className="shrink-0 px-4 pt-2">
-                <div className="flex items-baseline justify-between mb-1.5">
+              <div className="shrink-0 px-4 pt-1.5">
+                <div className="flex items-baseline justify-between mb-1">
                   <span className="text-white/60 text-xs">Recibido</span>
-                  <span className="font-display" style={{ fontSize: "clamp(0.95rem,2vh,1.25rem)" }}>{fmt(paid)}</span>
+                  <span className="font-display" style={{ fontSize: "clamp(0.85rem,1.8vh,1.1rem)" }}>{fmt(paid)}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+                <div className="grid grid-cols-6 gap-1 mb-1">
                   {QUICK_BILLS.map((b) => (
                     <button
                       key={b}
                       onClick={() => addBill(b)}
-                      className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 font-semibold"
-                      style={{ padding: "clamp(0.35rem,1.2vh,0.65rem) 0", fontSize: "clamp(0.75rem,1.5vh,0.95rem)" }}
+                      className="rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-semibold"
+                      style={{ padding: "clamp(0.25rem,0.9vh,0.5rem) 0", fontSize: "clamp(0.65rem,1.3vh,0.85rem)" }}
                     >
-                      +L{b}
+                      +{b}
                     </button>
                   ))}
                 </div>
                 <button
                   onClick={exact}
                   disabled={total === 0}
-                  className="w-full rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs disabled:opacity-30 mb-1.5"
-                  style={{ padding: "clamp(0.3rem,1vh,0.6rem) 0" }}
+                  className="w-full rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] disabled:opacity-30 mb-1"
+                  style={{ padding: "clamp(0.2rem,0.8vh,0.45rem) 0" }}
                 >
                   Pago exacto
                 </button>
               </div>
 
               {/* Numpad */}
-              <div className="shrink-0 px-4 pb-2 grid grid-cols-3 gap-1.5">
+              <div className="shrink-0 px-4 pb-1.5 grid grid-cols-3 gap-1">
                 {["1","2","3","4","5","6","7","8","9",".","0","back"].map((k) => (
                   <button
                     key={k}
@@ -288,37 +288,37 @@ export default function POSPage() {
           )}
 
           {/* Change + pay */}
-          <div className="shrink-0 px-4 pb-3 pt-2">
+          <div className="shrink-0 px-4 pb-2 pt-1.5">
             {method === "cash" ? (
               <div
-                className={`rounded-2xl border flex items-baseline justify-between mb-2 ${
+                className={`rounded-xl border flex items-baseline justify-between mb-1.5 ${
                   change < 0
                     ? "bg-red-500/10 border-red-500/30"
                     : change > 0
                     ? "bg-emerald-500/10 border-emerald-500/30"
                     : "bg-white/5 border-white/10"
                 }`}
-                style={{ padding: "clamp(0.5rem,1.6vh,1rem)" }}
+                style={{ padding: "clamp(0.35rem,1.2vh,0.7rem) clamp(0.5rem,1.5vh,0.85rem)" }}
               >
                 <span className="text-xs text-white/70">Cambio</span>
                 <span
                   className={`font-display ${
                     change < 0 ? "text-red-300" : change > 0 ? "text-emerald-300" : "text-white"
                   }`}
-                  style={{ fontSize: "clamp(1.1rem,3vh,1.85rem)" }}
+                  style={{ fontSize: "clamp(0.95rem,2.4vh,1.5rem)" }}
                 >
                   {change < 0 ? `Falta ${fmt(Math.abs(change))}` : fmt(change)}
                 </span>
               </div>
             ) : (
               <div
-                className="rounded-2xl border bg-sky-500/10 border-sky-500/30 flex items-baseline justify-between mb-2"
-                style={{ padding: "clamp(0.5rem,1.6vh,1rem)" }}
+                className="rounded-xl border bg-sky-500/10 border-sky-500/30 flex items-baseline justify-between mb-1.5"
+                style={{ padding: "clamp(0.35rem,1.2vh,0.7rem) clamp(0.5rem,1.5vh,0.85rem)" }}
               >
                 <span className="text-xs text-white/80">Pago con tarjeta</span>
                 <span
                   className="font-display text-sky-200"
-                  style={{ fontSize: "clamp(1.1rem,3vh,1.85rem)" }}
+                  style={{ fontSize: "clamp(0.95rem,2.4vh,1.5rem)" }}
                 >
                   {fmt(total)}
                 </span>
@@ -327,12 +327,12 @@ export default function POSPage() {
             <button
               onClick={pay}
               disabled={!canPay || busy}
-              className={`w-full rounded-2xl font-bold transition disabled:bg-white/10 disabled:text-white/40 ${
+              className={`w-full rounded-xl font-bold transition disabled:bg-white/10 disabled:text-white/40 ${
                 method === "card"
                   ? "bg-sky-400 text-black hover:brightness-110 active:brightness-95"
                   : "bg-amber text-black hover:brightness-110 active:brightness-95"
               }`}
-              style={{ padding: "clamp(0.6rem,2.2vh,1.1rem) 0", fontSize: "clamp(0.95rem,2.4vh,1.25rem)" }}
+              style={{ padding: "clamp(0.45rem,1.8vh,0.95rem) 0", fontSize: "clamp(0.85rem,2.2vh,1.15rem)" }}
             >
               {busy
                 ? "Guardando..."
