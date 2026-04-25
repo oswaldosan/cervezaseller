@@ -143,6 +143,31 @@ data/pos.db             # Base de datos (no commitear)
 
 ---
 
+## Feature flags
+
+Las features experimentales se activan por env var. Lectura en
+[lib/features.ts](lib/features.ts).
+
+| Flag | Default | Descripción |
+|---|---|---|
+| `NEXT_PUBLIC_FEATURE_TICKETS` | `0` | v2.0 — Preview de ticket térmico 58mm + AirPrint. Pendiente de implementación. |
+
+Para activar en Railway: dashboard → Variables → agregar la var con valor `1` → redeploy.
+
+> Las flags `NEXT_PUBLIC_*` se inlinean en el bundle al build, no en runtime. Cambiar requiere redeploy.
+
+### Roadmap v2.0 — Tickets AirPrint
+
+Aprobado (no implementado todavía):
+- Ruta `/ticket/[id]` que renderiza el ticket dimensionado a 58mm con CSS `@page`.
+- Mezcla **A + D**: HTML preview para confirmar antes de mandar a la impresora AirPrint del iPad (Star TSP143IIIU, Epson TM-m30, etc.).
+- Botón "Imprimir ticket" en el toast post-cobro.
+- Botón "Reimprimir" en cada fila del Historial.
+- Soporta efectivo y tarjeta. Para tarjeta muestra "Pagado con tarjeta" en vez de cambio.
+- Toggle por dispositivo en `localStorage` para auto-imprimir o no.
+
+Hardware mínimo recomendado: impresora térmica con AirPrint nativo. Las Bluetooth-only requieren app del fabricante y rompen el flujo PWA.
+
 ## Ideas de mejora
 
 Cosas que vale la pena agregar según crezca el uso:
