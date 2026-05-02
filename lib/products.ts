@@ -19,6 +19,8 @@ export const PRODUCTS: Product[] = [
   { id: "refresco", name: "Refresco Lata", price: 30, emoji: "🥤", image: "/products/refresco.png", accent: "#dc2626", category: "bebida" },
   { id: "agua", name: "Agua en Botella", price: 25, emoji: "🌊", accent: "#0284c7", category: "bebida" },
   { id: "cigarros", name: "Cigarro", price: 5, emoji: "🚬", accent: "#525252", category: "otro" },
+  { id: "entrada-100", name: "Entrada L100", price: 100, emoji: "🎟️", accent: "#9333ea", category: "otro" },
+  { id: "entrada-50", name: "Entrada L50", price: 50, emoji: "🎟️", accent: "#7c3aed", category: "otro" },
 ];
 
 export const productById = (id: string) => PRODUCTS.find((p) => p.id === id);
