@@ -3,20 +3,22 @@ import path from "path";
 import fs from "fs";
 
 const DATA_DIR = path.join(process.cwd(), "data");
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
 const dbPath = path.join(DATA_DIR, "pos.db");
 
 declare global {
   var __posDb: Database.Database | undefined;
 }
 
-export const db: Database.Database =
-  global.__posDb ?? new Database(dbPath);
+function init(): Database.Database {
+  if (global.__posDb) return global.__posDb;
 
-if (!global.__posDb) {
-  db.pragma("journal_mode = WAL");
-  db.exec(`
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+  const instance = new Database(dbPath, { timeout: 5000 });
+  instance.pragma("journal_mode = WAL");
+  instance.pragma("busy_timeout = 5000");
+
+  instance.exec(`
     CREATE TABLE IF NOT EXISTS sales (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -45,13 +47,12 @@ if (!global.__posDb) {
     CREATE INDEX IF NOT EXISTS idx_closings_closed ON cash_closings(closed_at);
   `);
 
-  // Lightweight migrations (idempotent)
   const addColumn = (table: string, col: string, def: string) => {
-    const cols = db
+    const cols = instance
       .prepare(`PRAGMA table_info(${table})`)
       .all() as { name: string }[];
     if (!cols.find((c) => c.name === col)) {
-      db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+      instance.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
     }
   };
   addColumn("sales", "payment_method", "TEXT NOT NULL DEFAULT 'cash'");
@@ -60,8 +61,17 @@ if (!global.__posDb) {
   addColumn("cash_closings", "cash_count", "INTEGER NOT NULL DEFAULT 0");
   addColumn("cash_closings", "card_count", "INTEGER NOT NULL DEFAULT 0");
 
-  global.__posDb = db;
+  global.__posDb = instance;
+  return instance;
 }
+
+export const db: Database.Database = new Proxy({} as Database.Database, {
+  get(_t, prop, receiver) {
+    const real = init();
+    const value = Reflect.get(real, prop, real);
+    return typeof value === "function" ? value.bind(real) : value;
+  },
+});
 
 export type PaymentMethod = "cash" | "card";
 
