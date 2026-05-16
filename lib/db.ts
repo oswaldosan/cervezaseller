@@ -45,6 +45,12 @@ function init(): Database.Database {
       breakdown_json TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_closings_closed ON cash_closings(closed_at);
+
+    CREATE TABLE IF NOT EXISTS product_prices (
+      id TEXT PRIMARY KEY,
+      price REAL NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   const addColumn = (table: string, col: string, def: string) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PRODUCTS, Product } from "@/lib/products";
 import ProductThumb from "@/components/ProductThumb";
 import ProductCard from "@/components/ProductCard";
@@ -18,7 +18,28 @@ function fmt(n: number) {
 type Method = "cash" | "card";
 
 export default function POSPage() {
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const [cart, setCart] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/products", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (active && Array.isArray(data.products)) setProducts(data.products);
+      } catch {}
+    };
+    load();
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
   const [paidStr, setPaidStr] = useState<string>("");
   const [method, setMethod] = useState<Method>("cash");
   const [toast, setToast] = useState<{
@@ -32,11 +53,12 @@ export default function POSPage() {
     () =>
       Object.entries(cart)
         .map(([id, qty]) => {
-          const p = PRODUCTS.find((x) => x.id === id)!;
+          const p = products.find((x) => x.id === id);
+          if (!p) return null;
           return { product: p, qty };
         })
-        .filter((l) => l.qty > 0),
-    [cart]
+        .filter((l): l is CartLine => !!l && l.qty > 0),
+    [cart, products]
   );
   const total = lines.reduce((s, l) => s + l.product.price * l.qty, 0);
   const paid = method === "card" ? total : Number(paidStr) || 0;
@@ -155,7 +177,7 @@ export default function POSPage() {
           <div className="text-xs text-white/40">Toca para agregar</div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 flex-1 min-h-0 auto-rows-fr">
-          {PRODUCTS.map((p) => {
+          {products.map((p) => {
             const qty = cart[p.id] || 0;
             return (
               <ProductCard

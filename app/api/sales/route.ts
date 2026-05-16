@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, SaleItem, SaleRow } from "@/lib/db";
 import { productById } from "@/lib/products";
+import { getEffectivePrice } from "@/lib/products-server";
 import { checkAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +29,9 @@ export async function POST(req: NextRequest) {
     const p = productById(it.id);
     if (!p) return NextResponse.json({ error: `Producto ${it.id} inválido` }, { status: 400 });
     const qty = Math.max(1, Math.floor(it.qty));
-    resolved.push({ id: p.id, name: p.name, price: p.price, qty });
-    total += p.price * qty;
+    const price = getEffectivePrice(p.id) ?? p.price;
+    resolved.push({ id: p.id, name: p.name, price, qty });
+    total += price * qty;
   }
 
   let paid: number;
